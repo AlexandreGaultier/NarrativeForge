@@ -37,9 +37,9 @@ const updateTheme = () => {
 
 <style scoped>
 .theme-toggle {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
+  /* position: fixed; */
+  /* top: 1rem; */
+  /* right: 1rem; */
   width: 3rem;
   height: 3rem;
   border-radius: 50%;

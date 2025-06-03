@@ -62,8 +62,13 @@ const confirmDialog = ref<HTMLDialogElement|null>(null);
 const bookToDelete = ref<string|null>(null);
 
 const genres = computed(() => {
-  const set = new Set(books.value.map(b => b.genre).filter(Boolean));
-  return Array.from(set) as string[];
+  const set = new Set<string>();
+  books.value.forEach(b => {
+    if (Array.isArray(b.genres)) {
+      b.genres.forEach(g => set.add(g));
+    }
+  });
+  return Array.from(set);
 });
 
 const filteredBooks = computed(() => {
@@ -90,7 +95,6 @@ const filteredBooks = computed(() => {
 
 onMounted(async () => {
   books.value = await storage.getAllBooks();
-  
   // Collecter tous les genres uniques
   const genres = new Set<string>();
   books.value.forEach(book => {
@@ -98,7 +102,7 @@ onMounted(async () => {
       book.genres.forEach(g => genres.add(g));
     }
   });
-  genreFilter.value = Array.from(genres)[0] || '';
+  // genreFilter.value = Array.from(genres)[0] || '';
 });
 
 const createNewBook = () => {
@@ -150,6 +154,7 @@ async function deleteBook() {
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  color: #b1a9b0;
 }
 .book-list-controls {
   display: flex;
@@ -161,9 +166,10 @@ async function deleteBook() {
 .search-input, .sort-select, .genre-select {
   padding: 0.5rem 1rem;
   border-radius: var(--border-radius);
-  border: 1px solid var(--text-secondary);
-  background: var(--card-bg);
-  color: var(--text-primary);
+  background: transparent;
+  color: #25485c;
+  border: 1px solid #25485c;
+
   font-size: 1rem;
 }
 .books-grid {
@@ -174,17 +180,19 @@ async function deleteBook() {
   margin: 0 auto;
 }
 .book-card {
-  background-color: var(--bg-secondary);
+  border: 1px solid #25485c;
   padding: 1.5rem;
   border-radius: var(--border-radius);
-  box-shadow: var(--shadow);
+  box-shadow: 0 2px 8px rgba(16,19,27,0.2);
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s;
+  color: #b1a9b0;
 }
 .book-card:hover {
   transform: translateY(-5px);
+  box-shadow: 0 4px 16px #25485c;
 }
 .book-meta {
   margin-bottom: 0.5rem;
@@ -209,18 +217,21 @@ async function deleteBook() {
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
+  background-color: #77292f;
+  color: #b1a9b0;
+  transition: background 0.2s, color 0.2s;
 }
 .book-actions button:first-child {
-  background-color: var(--accent-primary);
-  color: white;
+  background-color: #5d1615;
+  color: #b1a9b0;
 }
 .book-actions button:nth-child(2) {
-  background-color: var(--accent-warning);
-  color: var(--text-primary);
+  background-color: #b1a9b0;
+  color: #25485c;
 }
 .delete-btn {
-  background: #f44336;
-  color: white;
+  background: #77292f;
+  color: #b1a9b0;
 }
 .dialog-actions {
   display: flex;
@@ -235,16 +246,17 @@ async function deleteBook() {
   justify-content: center;
   cursor: pointer;
   min-height: 200px;
-  border: 2px dashed var(--text-secondary);
+  border: 2px dashed #b1a9b0;
   background: transparent;
+  color: #b1a9b0;
 }
 .create-icon {
   font-size: 3rem;
-  color: var(--text-secondary);
+  color: #b1a9b0;
   margin-bottom: 1rem;
 }
 .create-card span {
-  color: var(--text-secondary);
+  color: #b1a9b0;
   font-size: 1.1rem;
 }
 .book-genres {
@@ -253,10 +265,9 @@ async function deleteBook() {
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
-
 .genre-chip {
-  background: var(--accent-primary);
-  color: white;
+  background: #77292f;
+  color: #b1a9b0;
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
   font-size: 0.8rem;
