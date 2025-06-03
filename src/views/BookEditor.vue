@@ -39,17 +39,20 @@
         </div>
       </div>
       <!-- Liste des chapitres à droite -->
-      <div class="chapters-list">
-        <h2>Chapitres</h2>
-        <button @click="createNewChapter" class="new-chapter">Nouveau Chapitre</button>
-        <ul>
-          <li v-for="chapter in sortedChapters" 
-              :key="chapter.id"
-              :class="{ active: currentChapter?.id === chapter.id }"
-              @click="selectChapter(chapter)">
-            <span class="chapter-title">{{ chapter.number ? chapter.number + ': ' : '' }}{{ chapter.title || 'Sans titre' }}</span>
-          </li>
-        </ul>
+      <div class="chapters-list-graph">
+        <div class="chapters-list">
+          <h2>Chapitres</h2>
+          <button @click="createNewChapter" class="new-chapter">Nouveau Chapitre</button>
+          <ul>
+            <li v-for="chapter in sortedChapters" 
+                :key="chapter.id"
+                :class="{ active: currentChapter?.id === chapter.id }"
+                @click="selectChapter(chapter)">
+              <span class="chapter-title">{{ chapter.number ? chapter.number + ': ' : '' }}{{ chapter.title || 'Sans titre' }}</span>
+            </li>
+          </ul>
+        </div>
+        <ChapterGraph :chapters="book.chapters" @select="onGraphSelect" />
       </div>
     </div>
   </div>
@@ -60,6 +63,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Book, Chapter } from '../types';
 import { StorageFactory } from '../services/storage';
+import ChapterGraph from '../components/ChapterGraph.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -177,6 +181,11 @@ const saveBook = async () => {
   } catch (error) {
     console.error('Erreur lors de la sauvegarde du livre:', error);
   }
+};
+
+const onGraphSelect = (id: string) => {
+  const chapter = book.value.chapters.find(c => c.id === id);
+  if (chapter) selectChapter(chapter);
 };
 </script>
 
@@ -374,11 +383,20 @@ button.delete-chapter {
   margin-left: 1rem;
 }
 
+.chapters-list-graph {
+  flex: 2 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 260px;
+  max-width: 400px;
+}
+
 @media (max-width: 900px) {
   .editor-container {
     flex-direction: column;
   }
-  .chapters-list {
+  .chapters-list-graph {
     max-width: 100%;
     width: 100%;
     margin-top: 2rem;
