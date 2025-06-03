@@ -1,4 +1,5 @@
 import type { Book } from '../types';
+import sampleBooks from '../data/sample-books.json';
 
 export interface StorageService {
   getAllBooks(): Promise<Book[]>;
@@ -11,8 +12,14 @@ export class LocalStorageService implements StorageService {
   private readonly BOOKS_KEY = 'narrative_forge_books';
 
   async getAllBooks(): Promise<Book[]> {
-    const booksJson = localStorage.getItem(this.BOOKS_KEY);
-    return booksJson ? JSON.parse(booksJson) : [];
+    const books = localStorage.getItem(this.BOOKS_KEY);
+    if (!books) {
+      // Si aucun livre n'est stocké, on initialise avec les livres d'exemple
+      const initialBooks = sampleBooks.books as Book[];
+      await this.saveBooks(initialBooks);
+      return initialBooks;
+    }
+    return JSON.parse(books);
   }
 
   async getBook(id: string): Promise<Book | null> {
@@ -20,23 +27,25 @@ export class LocalStorageService implements StorageService {
     return books.find(book => book.id === id) || null;
   }
 
+  async saveBooks(books: Book[]): Promise<void> {
+    localStorage.setItem(this.BOOKS_KEY, JSON.stringify(books));
+  }
+
   async saveBook(book: Book): Promise<void> {
     const books = await this.getAllBooks();
     const index = books.findIndex(b => b.id === book.id);
-    
-    if (index >= 0) {
-      books[index] = book;
-    } else {
+    if (index === -1) {
       books.push(book);
+    } else {
+      books[index] = book;
     }
-    
-    localStorage.setItem(this.BOOKS_KEY, JSON.stringify(books));
+    await this.saveBooks(books);
   }
 
   async deleteBook(id: string): Promise<void> {
     const books = await this.getAllBooks();
-    const filteredBooks = books.filter(book => book.id !== id);
-    localStorage.setItem(this.BOOKS_KEY, JSON.stringify(filteredBooks));
+    const filteredBooks = books.filter(b => b.id !== id);
+    await this.saveBooks(filteredBooks);
   }
 }
 

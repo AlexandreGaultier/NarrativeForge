@@ -1,23 +1,29 @@
 <template>
-  <div class="chapter-graph-simple-vertical graph-scrollable">
-    <svg v-if="edges.length" class="graph-svg" :width="svgWidth" :height="svgHeight">
-      <line v-for="edge in edges" :key="edge.id"
-        :x1="edge.x1" :y1="edge.y1" :x2="edge.x2" :y2="edge.y2"
-        stroke="var(--accent-secondary)" stroke-width="3" marker-end="url(#arrow)" />
-      <defs>
-        <marker id="arrow" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto" markerUnits="strokeWidth">
-          <path d="M0,0 L12,6 L0,12" fill="var(--accent-secondary)" />
-        </marker>
-      </defs>
-    </svg>
-    <div class="graph-rows">
-      <div v-for="(level, rowIdx) in levels" :key="rowIdx" class="graph-row">
-        <div v-for="chapter in level" :key="chapter.id" class="chapter-node"
-             :class="{ clickable: true }"
-             :style="nodeStyle(chapter.id)"
-             @click="$emit('select', chapter.id)">
-          <div class="chapter-number">{{ chapter.number }}</div>
-          <div class="chapter-label">{{ chapter.title }}</div>
+  <div class="chapter-graph-simple-vertical graph-scrollable"
+       ref="graphContainer"
+       @wheel.prevent="onWheel"
+       @mousedown="onMouseDown"
+       @dblclick="resetView">
+    <div class="graph-transform" :style="transformStyle">
+      <svg v-if="edges.length" class="graph-svg" :width="svgWidth" :height="svgHeight">
+        <line v-for="edge in edges" :key="edge.id"
+          :x1="edge.x1" :y1="edge.y1" :x2="edge.x2" :y2="edge.y2"
+          stroke="var(--accent-secondary)" stroke-width="3" marker-end="url(#arrow)" />
+        <defs>
+          <marker id="arrow" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L12,6 L0,12" fill="var(--accent-secondary)" />
+          </marker>
+        </defs>
+      </svg>
+      <div class="graph-rows">
+        <div v-for="(level, rowIdx) in levels" :key="rowIdx" class="graph-row">
+          <div v-for="chapter in level" :key="chapter.id" class="chapter-node"
+               :class="{ clickable: true }"
+               :style="nodeStyle(chapter.id)"
+               @click="$emit('select', chapter.id)">
+            <div class="chapter-number">{{ chapter.number }}</div>
+            <div class="chapter-label">{{ chapter.title }}</div>
+          </div>
         </div>
       </div>
     </div>
@@ -25,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Chapter } from '../types';
 
 const props = defineProps<{ chapters: Chapter[] }>();
@@ -101,6 +107,59 @@ function nodeStyle(id: string) {
   const pos = nodePositions.value[id];
   return pos ? { left: pos.x + 'px', top: pos.y + 'px', width: '200px' } : {};
 }
+
+// --- ZOOM & PAN ---
+const graphContainer = ref<HTMLElement|null>(null);
+const scale = ref(1);
+const minScale = 0.5;
+const maxScale = 2.5;
+const translate = ref({ x: 0, y: 0 });
+const dragging = ref(false);
+const dragStart = ref({ x: 0, y: 0 });
+const lastTranslate = ref({ x: 0, y: 0 });
+
+const transformStyle = computed(() => `transform: translate(${translate.value.x}px, ${translate.value.y}px) scale(${scale.value}); transform-origin: 0 0; transition: ${dragging.value ? 'none' : 'transform 0.15s'};`);
+
+function onWheel(e: WheelEvent) {
+  const delta = -e.deltaY || e.wheelDelta || -e.detail;
+  let newScale = scale.value + (delta > 0 ? 0.1 : -0.1);
+  newScale = Math.max(minScale, Math.min(maxScale, newScale));
+  // Zoom centré sur la souris
+  if (graphContainer.value) {
+    const rect = graphContainer.value.getBoundingClientRect();
+    const mx = e.clientX - rect.left - translate.value.x;
+    const my = e.clientY - rect.top - translate.value.y;
+    const scaleRatio = newScale / scale.value;
+    translate.value.x = mx - (mx * scaleRatio) + translate.value.x;
+    translate.value.y = my - (my * scaleRatio) + translate.value.y;
+  }
+  scale.value = newScale;
+}
+
+function onMouseDown(e: MouseEvent) {
+  if (e.button !== 0) return;
+  dragging.value = true;
+  dragStart.value = { x: e.clientX, y: e.clientY };
+  lastTranslate.value = { ...translate.value };
+  document.body.style.cursor = 'grab';
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+}
+function onMouseMove(e: MouseEvent) {
+  if (!dragging.value) return;
+  translate.value.x = lastTranslate.value.x + (e.clientX - dragStart.value.x);
+  translate.value.y = lastTranslate.value.y + (e.clientY - dragStart.value.y);
+}
+function onMouseUp() {
+  dragging.value = false;
+  document.body.style.cursor = '';
+  window.removeEventListener('mousemove', onMouseMove);
+  window.removeEventListener('mouseup', onMouseUp);
+}
+function resetView() {
+  scale.value = 1;
+  translate.value = { x: 0, y: 0 };
+}
 </script>
 
 <style scoped>
@@ -115,11 +174,17 @@ function nodeStyle(id: string) {
   overflow: auto;
   width: 100%;
   max-width: 100%;
+  user-select: none;
 }
 .graph-scrollable {
   overflow-x: auto;
   overflow-y: auto;
   scrollbar-width: thin;
+}
+.graph-transform {
+  width: 100%;
+  height: 100%;
+  will-change: transform;
 }
 .graph-svg {
   position: absolute;

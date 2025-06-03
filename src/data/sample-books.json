@@ -1,0 +1,64 @@
+{
+  "books": [
+    {
+      "id": "book-1",
+      "title": "Le Mystère de la Tour Noire",
+      "genre": "Fantasy",
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "title": "Le Début de l'Aventure",
+          "text": "Vous vous réveillez dans une auberge inconnue...",
+          "next": ["chapter-2"]
+        }
+      ],
+      "character": {
+        "name": "Aventurier",
+        "hp": 100,
+        "gold": 50,
+        "inventory": []
+      }
+    },
+    {
+      "id": "book-2",
+      "title": "Cyberpunk 2084",
+      "genre": "Science-Fiction",
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "title": "Le Réveil",
+          "text": "Les néons de la ville brillent à travers votre fenêtre...",
+          "next": ["chapter-2"]
+        }
+      ],
+      "character": {
+        "name": "Netrunner",
+        "hp": 80,
+        "gold": 100,
+        "inventory": []
+      }
+    },
+    {
+      "id": "book-3",
+      "title": "L'Enquête du Commissaire",
+      "genre": "Policier",
+      "chapters": [
+        {
+          "id": "chapter-1",
+          "number": 1,
+          "title": "Le Crime",
+          "text": "Un corps a été découvert dans une ruelle sombre...",
+          "next": ["chapter-2"]
+        }
+      ],
+      "character": {
+        "name": "Commissaire",
+        "hp": 90,
+        "gold": 75,
+        "inventory": []
+      }
+    }
+  ]
+} 

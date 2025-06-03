@@ -24,4 +24,5 @@ export interface Book {
   title: string;
   chapters: Chapter[];
   character: Character;
+  genre?: string; // Ex: 'Fantasy', 'SF', 'Policier', etc.
 } 

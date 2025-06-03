@@ -16,20 +16,28 @@
       </div>
 
       <div class="character-sheet-container">
-        <CharacterSheet :character="book.character" />
+        <CharacterSheet :character="playerCharacter" />
         <DiceRoller />
+        <button class="combat-btn" @click="showCombatModal = true">Lancer un combat</button>
+        <CombatModal
+          :show="showCombatModal"
+          :character="playerCharacter"
+          @close="showCombatModal = false"
+          @update:character="handleUpdateCharacter"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Book, Chapter } from '../types';
 import { StorageFactory } from '../services/storage';
 import CharacterSheet from '../components/CharacterSheet.vue';
 import DiceRoller from '../components/DiceRoller.vue';
+import CombatModal from '../components/CombatModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -48,6 +56,22 @@ const book = ref<Book>({
 });
 
 const currentChapter = ref<Chapter | null>(null);
+const showCombatModal = ref(false);
+const playerCharacter = ref({ ...book.value.character });
+
+watch(
+  () => book.value.character,
+  (val) => {
+    playerCharacter.value = { ...val };
+  },
+  { deep: true }
+);
+
+function handleUpdateCharacter(newChar) {
+  playerCharacter.value = { ...newChar };
+  book.value.character = { ...newChar };
+  storage.saveBook(book.value);
+}
 
 onMounted(async () => {
   try {
@@ -138,5 +162,24 @@ h1 {
   position: sticky;
   top: 2rem;
   align-self: start;
+}
+
+.combat-btn {
+  margin-top: 1.5rem;
+  background: var(--accent-warning);
+  color: var(--text-primary);
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 0.7rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: var(--shadow);
+}
+
+.combat-btn:hover {
+  background: var(--accent-primary);
+  color: white;
 }
 </style> 
