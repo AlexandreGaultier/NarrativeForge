@@ -52,7 +52,8 @@ const book = ref<Book>({
     hp: 0,
     gold: 0,
     inventory: []
-  }
+  },
+  genres: []
 });
 
 const currentChapter = ref<Chapter | null>(null);
@@ -152,10 +153,13 @@ h1 {
   cursor: pointer;
   text-align: left;
   transition: background-color 0.2s ease;
+  border: 2px solid transparent;
+
 }
 
 .choice-button:hover {
-  background-color: var(--accent-secondary);
+  background-color:transparent;
+  border: 2px solid var(--accent-primary);
 }
 
 .character-sheet-container {
@@ -176,10 +180,12 @@ h1 {
   cursor: pointer;
   transition: background 0.2s;
   box-shadow: var(--shadow);
+  border: 2px solid transparent;
 }
 
 .combat-btn:hover {
-  background: var(--accent-primary);
-  color: white;
+  background-color: transparent;
+  border: 2px solid var(--accent-warning);
+  color: var(--accent-warning);
 }
 </style> 

@@ -96,10 +96,12 @@ h3 {
   cursor: pointer;
   font-size: 0.95rem;
   transition: background 0.2s;
+  border: 2px solid transparent;
 }
 
 .roll-btn:hover {
-  background-color: var(--accent-secondary);
+  background-color: transparent;
+  border: 2px solid var(--accent-primary);
 }
 
 .dice-results {

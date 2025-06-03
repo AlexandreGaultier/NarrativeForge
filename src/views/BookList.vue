@@ -180,7 +180,7 @@ async function deleteBook() {
   margin: 0 auto;
 }
 .book-card {
-  border: 1px solid #25485c;
+  background-color: var(--card-bg);
   padding: 1.5rem;
   border-radius: var(--border-radius);
   box-shadow: 0 2px 8px rgba(16,19,27,0.2);
@@ -191,8 +191,8 @@ async function deleteBook() {
   color: #b1a9b0;
 }
 .book-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 4px 16px #25485c;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px var(--accent-primary);
 }
 .book-meta {
   margin-bottom: 0.5rem;
