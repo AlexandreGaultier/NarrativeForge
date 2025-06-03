@@ -9,26 +9,36 @@ export interface StorageService {
 }
 
 export class LocalStorageService implements StorageService {
-  private readonly BOOKS_KEY = 'narrative_forge_books';
+  private readonly STORAGE_KEY = 'narrative-forge-books';
 
   async getAllBooks(): Promise<Book[]> {
-    const books = localStorage.getItem(this.BOOKS_KEY);
-    if (!books) {
-      // Si aucun livre n'est stocké, on initialise avec les livres d'exemple
-      const initialBooks = sampleBooks.books as Book[];
+    const booksJson = localStorage.getItem(this.STORAGE_KEY);
+    if (!booksJson) {
+      const initialBooks = sampleBooks.books.map(book => ({
+        ...book,
+        genres: book.genre ? [book.genre] : []
+      })) as Book[];
       await this.saveBooks(initialBooks);
       return initialBooks;
     }
-    return JSON.parse(books);
+
+    const books = JSON.parse(booksJson) as Book[];
+    // Migration des anciens livres
+    return books.map(book => {
+      if ('genre' in book && !('genres' in book)) {
+        const { genre, ...rest } = book as any;
+        return {
+          ...rest,
+          genres: genre ? [genre] : []
+        } as Book;
+      }
+      return book;
+    });
   }
 
   async getBook(id: string): Promise<Book | null> {
     const books = await this.getAllBooks();
     return books.find(book => book.id === id) || null;
-  }
-
-  async saveBooks(books: Book[]): Promise<void> {
-    localStorage.setItem(this.BOOKS_KEY, JSON.stringify(books));
   }
 
   async saveBook(book: Book): Promise<void> {
@@ -44,8 +54,12 @@ export class LocalStorageService implements StorageService {
 
   async deleteBook(id: string): Promise<void> {
     const books = await this.getAllBooks();
-    const filteredBooks = books.filter(b => b.id !== id);
+    const filteredBooks = books.filter(book => book.id !== id);
     await this.saveBooks(filteredBooks);
+  }
+
+  async saveBooks(books: Book[]): Promise<void> {
+    localStorage.setItem(this.STORAGE_KEY, JSON.stringify(books));
   }
 }
 
@@ -93,14 +107,7 @@ export class FirestoreService implements StorageService {
 
 // Factory pour créer le service de stockage approprié
 export class StorageFactory {
-  static createStorage(type: 'localStorage' | 'indexDB' | 'firestore' = 'localStorage'): StorageService {
-    switch (type) {
-      case 'indexDB':
-        return new IndexDBService();
-      case 'firestore':
-        return new FirestoreService();
-      default:
-        return new LocalStorageService();
-    }
+  static createStorage(): StorageService {
+    return new LocalStorageService();
   }
 } 

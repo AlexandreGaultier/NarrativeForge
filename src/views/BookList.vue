@@ -4,8 +4,8 @@
     <div class="book-list-controls">
       <input v-model="search" class="search-input" placeholder="Rechercher un livre..." />
       <select v-model="sortBy" class="sort-select">
-        <option value="alpha">A → Z</option>
-        <option value="date">Date de création</option>
+        <option value="title">Trier par titre</option>
+        <option value="date">Trier par date</option>
       </select>
       <select v-model="genreFilter" class="genre-select">
         <option value="">Tous les genres</option>
@@ -18,9 +18,15 @@
         <span>Créer un nouveau livre</span>
       </div>
       <div v-for="book in filteredBooks" :key="book.id" class="book-card">
-        <h2>{{ book.title }}</h2>
-        <div class="book-meta">
-          <span v-if="book.genre" class="book-genre">{{ book.genre }}</span>
+        <div class="book-info">
+          <h3>{{ book.title }}</h3>
+          <div class="book-genres">
+            <span v-for="genre in (book.genres || [])" 
+                  :key="genre" 
+                  class="genre-chip">
+              {{ genre }}
+            </span>
+          </div>
         </div>
         <div class="book-actions">
           <button @click.stop="readBook(book.id)">Lire</button>
@@ -50,7 +56,7 @@ const books = ref<Book[]>([]);
 const storage = StorageFactory.createStorage();
 
 const search = ref('');
-const sortBy = ref('alpha');
+const sortBy = ref('title');
 const genreFilter = ref('');
 const confirmDialog = ref<HTMLDialogElement|null>(null);
 const bookToDelete = ref<string|null>(null);
@@ -62,44 +68,55 @@ const genres = computed(() => {
 
 const filteredBooks = computed(() => {
   let list = books.value;
+  
   if (search.value) {
-    list = list.filter(b => b.title.toLowerCase().includes(search.value.toLowerCase()));
+    list = list.filter(b => 
+      b.title.toLowerCase().includes(search.value.toLowerCase())
+    );
   }
+  
   if (genreFilter.value) {
-    list = list.filter(b => b.genre === genreFilter.value);
+    list = list.filter(b => b.genres && b.genres.includes(genreFilter.value));
   }
-  if (sortBy.value === 'alpha') {
+  
+  if (sortBy.value === 'title') {
     list = [...list].sort((a, b) => a.title.localeCompare(b.title));
   } else if (sortBy.value === 'date') {
-    list = [...list].sort((a, b) => (a.id > b.id ? -1 : 1)); // id = timestamp
+    list = [...list].sort((a, b) => parseInt(b.id) - parseInt(a.id));
   }
+  
   return list;
 });
 
 onMounted(async () => {
-  try {
-    const savedBooks = await storage.getAllBooks();
-    books.value = savedBooks.length > 0 ? savedBooks : [];
-  } catch (error) {
-    books.value = [];
-  }
+  books.value = await storage.getAllBooks();
+  
+  // Collecter tous les genres uniques
+  const genres = new Set<string>();
+  books.value.forEach(book => {
+    if (Array.isArray(book.genres)) {
+      book.genres.forEach(g => genres.add(g));
+    }
+  });
+  genreFilter.value = Array.from(genres)[0] || '';
 });
 
 const createNewBook = () => {
-  const newId = `book-${Date.now()}`;
   const newBook: Book = {
-    id: newId,
-    title: "Nouveau Livre",
+    id: `book-${Date.now()}`,
+    title: 'Nouveau Livre',
+    genres: [],
     chapters: [],
     character: {
-      name: "Héros",
+      name: 'Héros',
       hp: 100,
-      gold: 0,
+      gold: 50,
       inventory: []
     }
   };
+  
   storage.saveBook(newBook).then(() => {
-    router.push(`/books/${newId}/edit`);
+    router.push(`/books/${newBook.id}`);
   });
 };
 
@@ -229,5 +246,19 @@ async function deleteBook() {
 .create-card span {
   color: var(--text-secondary);
   font-size: 1.1rem;
+}
+.book-genres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.genre-chip {
+  background: var(--accent-primary);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
 }
 </style> 

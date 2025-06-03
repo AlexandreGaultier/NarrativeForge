@@ -1,5 +1,45 @@
 <template>
   <div class="book-editor">
+    <div class="book-metadata">
+      <div class="metadata-card">
+        <h2 class="book-title" 
+            contenteditable="true"
+            @blur="updateTitle"
+            @keyup.enter="updateTitle"
+            ref="titleInput">{{ book.title }}</h2>
+
+        <div class="form-group">
+          <div class="genre-input">
+            <input 
+              v-model="newGenre"
+              type="text"
+              placeholder="Ajouter un genre"
+              @keyup.enter="addGenre"
+            />
+            <button @click="addGenre" class="add-genre-btn">+</button>
+          </div>
+          <div class="genres-list">
+            <div 
+              v-for="genre in availableGenres" 
+              :key="genre"
+              class="genre-chip"
+              :class="{ 'selected': book.genres.includes(genre) }"
+              @click="selectGenre(genre)"
+            >
+              {{ genre }}
+              <button 
+                v-if="!book.genres.includes(genre)"
+                @click.stop="removeGenre(genre)"
+                class="remove-genre"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="editor-container">
       <!-- Formulaire d'édition à gauche -->
       <div class="chapter-editor" v-if="currentChapter">
@@ -21,7 +61,7 @@
           <div class="next-chapters-list">
             <div v-for="(nextId, index) in currentChapter.next" :key="nextId" class="next-chapter">
               <select :value="nextId" 
-                      @change="updateNextChapter(index, $event.target.value)" 
+                      @change="(e: Event) => updateNextChapter(index, (e.target as HTMLSelectElement).value)" 
                       class="chapter-select">
                 <option v-for="chapter in availableChapters" 
                         :key="chapter.id" 
@@ -72,6 +112,7 @@ const storage = StorageFactory.createStorage();
 const book = ref<Book>({
   id: route.params.id as string,
   title: 'Nouveau Livre',
+  genres: [],
   chapters: [],
   character: {
     name: 'Héros',
@@ -81,7 +122,10 @@ const book = ref<Book>({
   }
 });
 
+const newGenre = ref('');
+const availableGenres = ref<string[]>([]);
 const currentChapter = ref<Chapter | null>(null);
+const titleInput = ref<HTMLElement | null>(null);
 
 // Liste triée par numéro croissant puis titre
 const sortedChapters = computed(() => {
@@ -106,6 +150,11 @@ onMounted(async () => {
       savedBook.chapters.forEach((ch, idx) => {
         if (ch.number === undefined) ch.number = idx + 1;
       });
+      // Migration des anciens livres avec un seul genre
+      if ('genre' in savedBook) {
+        savedBook.genres = savedBook.genre ? [savedBook.genre] : [];
+        delete savedBook.genre;
+      }
       book.value = savedBook;
       if (book.value.chapters.length > 0) {
         currentChapter.value = book.value.chapters[0];
@@ -113,6 +162,18 @@ onMounted(async () => {
     } else {
       router.push('/books');
     }
+
+    // Charger tous les genres existants
+    const allBooks = await storage.getAllBooks();
+    const genres = new Set<string>();
+    allBooks.forEach(b => {
+      if (Array.isArray(b.genres)) {
+        b.genres.forEach(g => genres.add(g));
+      } else if (b.genre) {
+        genres.add(b.genre);
+      }
+    });
+    availableGenres.value = Array.from(genres);
   } catch (error) {
     console.error('Erreur lors du chargement du livre:', error);
     router.push('/books');
@@ -187,6 +248,38 @@ const onGraphSelect = (id: string) => {
   const chapter = book.value.chapters.find(c => c.id === id);
   if (chapter) selectChapter(chapter);
 };
+
+const updateTitle = () => {
+  if (titleInput.value) {
+    book.value.title = titleInput.value.textContent || '';
+    saveBook();
+  }
+};
+
+const addGenre = () => {
+  if (newGenre.value.trim() && !availableGenres.value.includes(newGenre.value.trim())) {
+    const genre = newGenre.value.trim();
+    availableGenres.value.push(genre);
+    book.value.genres.push(genre);
+    newGenre.value = '';
+    saveBook();
+  }
+};
+
+const selectGenre = (genre: string) => {
+  if (!book.value.genres.includes(genre)) {
+    book.value.genres.push(genre);
+  } else {
+    book.value.genres = book.value.genres.filter(g => g !== genre);
+  }
+  saveBook();
+};
+
+const removeGenre = (genre: string) => {
+  book.value.genres = book.value.genres.filter(g => g !== genre);
+  availableGenres.value = availableGenres.value.filter(g => g !== genre);
+  saveBook();
+};
 </script>
 
 <style scoped>
@@ -194,6 +287,97 @@ const onGraphSelect = (id: string) => {
   max-width: 1400px;
   margin: 0 auto;
   padding: 2rem 0;
+}
+
+.book-metadata {
+  margin-bottom: 2rem;
+}
+
+.metadata-card {
+  background: var(--bg-secondary);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.metadata-card h2 {
+  margin-bottom: 1.5rem;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-group input {
+  padding: 0.5rem;
+  border: 1px solid var(--text-secondary);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.genre-input {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.add-genre-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: var(--border-radius);
+  background: var(--accent-primary);
+  color: white;
+  cursor: pointer;
+}
+
+.genres-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.genre-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.genre-chip.selected {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.remove-genre {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 0 0.2rem;
+}
+
+.genre-chip:hover {
+  transform: translateY(-2px);
 }
 
 .editor-container {
@@ -390,6 +574,27 @@ button.delete-chapter {
   gap: 1.5rem;
   min-width: 260px;
   max-width: 400px;
+}
+
+.book-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1.5rem;
+  padding: 0.5rem;
+  border: 2px solid transparent;
+  border-radius: var(--border-radius);
+  transition: all 0.2s ease;
+}
+
+.book-title:hover {
+  border-color: var(--accent-primary);
+}
+
+.book-title:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  background: var(--bg-primary);
 }
 
 @media (max-width: 900px) {
