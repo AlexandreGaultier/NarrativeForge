@@ -29,8 +29,8 @@
           </div>
         </div>
         <div class="book-actions">
-          <button @click.stop="readBook(book.id)">Lire</button>
-          <button @click.stop="editBook(book.id)">Éditer</button>
+          <button @click.stop="readBook(book.id) " class="read-btn">Lire</button>
+          <button @click.stop="editBook(book.id)" class="edit-btn">Éditer</button>
           <button @click.stop="confirmDelete(book.id)" class="delete-btn">Supprimer</button>
         </div>
       </div>
@@ -217,20 +217,20 @@ async function deleteBook() {
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
-  background-color: #77292f;
   color: #b1a9b0;
   transition: background 0.2s, color 0.2s;
 }
-.book-actions button:first-child {
-  background-color: #5d1615;
+.read-btn {
+  background: var(--accent-primary);
   color: #b1a9b0;
 }
-.book-actions button:nth-child(2) {
-  background-color: #b1a9b0;
-  color: #25485c;
+.edit-btn {
+  background-color: transparent ;
+  border: 1px solid #b1a9b0 !important;
+  color: #b1a9b0;
 }
 .delete-btn {
-  background: #77292f;
+  background: var(--accent-tertiary);
   color: #b1a9b0;
 }
 .dialog-actions {
@@ -266,7 +266,7 @@ async function deleteBook() {
   margin-top: 0.5rem;
 }
 .genre-chip {
-  background: #77292f;
+  background: var(--accent-primary);
   color: #b1a9b0;
   padding: 0.2rem 0.6rem;
   border-radius: 12px;

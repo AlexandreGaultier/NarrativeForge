@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import ThemeToggle from './components/ThemeToggle.vue';
+// import ThemeToggle from './components/ThemeToggle.vue';
 // Le routeur est déjà configuré dans main.ts
 </script>
 
 <template>
   <div id="app">
-    <ThemeToggle />
+    <!-- <ThemeToggle /> -->
     <router-view></router-view>
   </div>
 </template>
