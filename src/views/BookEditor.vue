@@ -1,44 +1,6 @@
 <template>
   <div class="book-editor">
-    <div class="book-metadata">
-      <div class="metadata-card">
-        <h2 class="book-title" 
-            contenteditable="true"
-            @blur="updateTitle"
-            @keyup.enter="updateTitle"
-            ref="titleInput">{{ book.title }}</h2>
-
-        <div class="form-group">
-          <div class="genre-input">
-            <input 
-              v-model="newGenre"
-              type="text"
-              placeholder="Ajouter un genre"
-              @keyup.enter="addGenre"
-            />
-            <button @click="addGenre" class="add-genre-btn">+</button>
-          </div>
-          <div class="genres-list">
-            <div 
-              v-for="genre in availableGenres" 
-              :key="genre"
-              class="genre-chip"
-              :class="{ 'selected': book.genres.includes(genre) }"
-              @click="selectGenre(genre)"
-            >
-              {{ genre }}
-              <button 
-                v-if="!book.genres.includes(genre)"
-                @click.stop="removeGenre(genre)"
-                class="remove-genre"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    
 
     <div class="editor-container">
       <!-- Formulaire d'édition à gauche -->
@@ -78,23 +40,63 @@
           <button @click="saveBook" class="save-button">Sauvegarder</button>
         </div>
       </div>
-      <!-- Liste des chapitres à droite -->
-      <div class="chapters-list-graph">
-        <div class="chapters-list">
-          <h2>Chapitres</h2>
-          <button @click="createNewChapter" class="new-chapter">Nouveau Chapitre</button>
-          <ul>
-            <li v-for="chapter in sortedChapters" 
-                :key="chapter.id"
-                :class="{ active: currentChapter?.id === chapter.id }"
-                @click="selectChapter(chapter)">
-              <span class="chapter-title">{{ chapter.number ? chapter.number + ': ' : '' }}{{ chapter.title || 'Sans titre' }}</span>
-            </li>
-          </ul>
+      <!-- Colonne de droite : métadonnées + liste des chapitres -->
+      <div class="right-panel">
+        <div class="book-metadata">
+          <div class="metadata-card">
+            <h2 class="book-title" 
+                contenteditable="true"
+                @blur="updateTitle"
+                @keyup.enter="updateTitle"
+                ref="titleInput">{{ book.title }}</h2>
+            <div class="form-group">
+              <div class="genre-input">
+                <input 
+                  v-model="newGenre"
+                  type="text"
+                  placeholder="Ajouter un genre"
+                  @keyup.enter="addGenre"
+                />
+                <button @click="addGenre" class="add-genre-btn">+</button>
+              </div>
+              <div class="genres-list">
+                <div 
+                  v-for="genre in availableGenres" 
+                  :key="genre"
+                  class="genre-chip"
+                  :class="{ 'selected': book.genres.includes(genre) }"
+                  @click="selectGenre(genre)"
+                >
+                  {{ genre }}
+                  <button 
+                    v-if="!book.genres.includes(genre)"
+                    @click.stop="removeGenre(genre)"
+                    class="remove-genre"
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <ChapterGraph :chapters="book.chapters" @select="onGraphSelect" />
+        <div class="chapters-list-graph">
+          <div class="chapters-list">
+            <h2>Chapitres</h2>
+            <button @click="createNewChapter" class="new-chapter">Nouveau Chapitre</button>
+            <ul>
+              <li v-for="chapter in sortedChapters" 
+                  :key="chapter.id"
+                  :class="{ active: currentChapter?.id === chapter.id }"
+                  @click="selectChapter(chapter)">
+                <span class="chapter-title">{{ chapter.number ? chapter.number + ': ' : '' }}{{ chapter.title || 'Sans titre' }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
+    <ChapterGraph :chapters="book.chapters" @select="onGraphSelect" />
   </div>
 </template>
 
@@ -152,8 +154,9 @@ onMounted(async () => {
       });
       // Migration des anciens livres avec un seul genre
       if ('genre' in savedBook) {
-        savedBook.genres = savedBook.genre ? [savedBook.genre] : [];
-        delete savedBook.genre;
+        const genreValue = (savedBook as any)['genre'];
+        savedBook.genres = genreValue ? [String(genreValue)] : [];
+        delete (savedBook as any)['genre'];
       }
       book.value = savedBook;
       if (book.value.chapters.length > 0) {
@@ -169,8 +172,8 @@ onMounted(async () => {
     allBooks.forEach(b => {
       if (Array.isArray(b.genres)) {
         b.genres.forEach(g => genres.add(g));
-      } else if (b.genre) {
-        genres.add(b.genre);
+      } else if ('genre' in b && b['genre']) {
+        genres.add(String(b['genre']));
       }
     });
     availableGenres.value = Array.from(genres);
@@ -182,7 +185,9 @@ onMounted(async () => {
 
 const createNewChapter = () => {
   // Numéro auto-incrémenté (max+1)
-  const maxNumber = book.value.chapters.reduce((max, ch) => ch.number > max ? ch.number : max, 0);
+  const maxNumber = book.value.chapters
+    .filter(ch => typeof ch.number === 'number')
+    .reduce((max, ch) => (ch.number! > max ? ch.number! : max), 0);
   const newChapter: Chapter = {
     id: `chapter-${Date.now()}`,
     number: maxNumber + 1,
@@ -291,6 +296,14 @@ const removeGenre = (genre: string) => {
 
 .book-metadata {
   margin-bottom: 2rem;
+}
+
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 2 1 0;
+  min-width: 260px;
+  max-width: 400px;
 }
 
 .metadata-card {
@@ -468,7 +481,7 @@ const removeGenre = (genre: string) => {
 
 .remove-next {
   padding: 0.5rem;
-  background-color: #f44336;
+  background-color: var(--accent-warning);
   color: white;
   border: none;
   border-radius: var(--border-radius);
@@ -480,8 +493,14 @@ button {
   border: none;
   border-radius: var(--border-radius);
   cursor: pointer;
-  background-color: var(--accent-secondary);
+  background-color: var(--accent-primary);
   color: white;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+button:hover {
+  background-color: transparent;
+  border: 2px solid var(--accent-primary);
 }
 
 button.add-next {
@@ -495,7 +514,13 @@ button.new-chapter {
 }
 
 button.delete-chapter {
-  background-color: #f44336;
+  background-color: var(--accent-warning);
+  border: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+button.delete-chapter:hover {
+  background-color: transparent;
+  border: 2px solid var(--accent-warning);
 }
 
 .editor-actions {
@@ -505,9 +530,14 @@ button.delete-chapter {
 }
 
 .save-button {
-  background-color: var(--accent-secondary);
+  background-color: var(--accent-primary);
   padding: 0.75rem 1.5rem;
   font-size: 1.1rem;
+  border: 2px solid transparent;
+}
+.save-button:hover {
+  background-color: transparent;
+  border: 2px solid var(--accent-primary);
 }
 
 .chapters-list {
@@ -516,7 +546,6 @@ button.delete-chapter {
   padding: 2rem 1rem;
   border-radius: var(--border-radius);
   min-width: 260px;
-  max-width: 350px;
   box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
@@ -527,6 +556,7 @@ button.delete-chapter {
   font-family: 'Cinzel', serif;
   font-size: 1.3rem;
   color: var(--text-primary);
+  margin-top: 0;
   margin-bottom: 1rem;
 }
 
@@ -558,7 +588,7 @@ button.delete-chapter {
 .chapters-list li.active {
   background-color: var(--accent-primary);
   color: white;
-  border: 1px solid var(--accent-secondary);
+  border: 1px solid var(--accent-primary);
 }
 
 .chapter-id {
@@ -580,6 +610,7 @@ button.delete-chapter {
   font-size: 2rem;
   font-weight: 600;
   color: var(--text-primary);
+  margin-top: 0;
   margin-bottom: 1.5rem;
   padding: 0.5rem;
   border: 2px solid transparent;

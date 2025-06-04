@@ -20,6 +20,7 @@
       <div v-for="book in filteredBooks" :key="book.id" class="book-card">
         <div class="book-info">
           <h3>{{ book.title }}</h3>
+          <span v-if="(book as any).isSample" class="sample-badge">Exemple</span>
           <div class="book-genres">
             <span v-for="genre in (book.genres || [])" 
                   :key="genre" 
@@ -30,8 +31,8 @@
         </div>
         <div class="book-actions">
           <button @click.stop="readBook(book.id) " class="read-btn">Lire</button>
-          <button @click.stop="editBook(book.id)" class="edit-btn">Éditer</button>
-          <button @click.stop="confirmDelete(book.id)" class="delete-btn">Supprimer</button>
+          <button v-if="!(book as any).isSample" @click.stop="editBook(book.id)" class="edit-btn">Éditer</button>
+          <button v-if="!(book as any).isSample" @click.stop="confirmDelete(book.id)" class="delete-btn">Supprimer</button>
         </div>
       </div>
     </div>
@@ -53,6 +54,7 @@ import { StorageFactory } from '../services/storage';
 
 const router = useRouter();
 const books = ref<Book[]>([]);
+const sampleBooks = ref<(Book & { isSample?: boolean })[]>([]);
 const storage = StorageFactory.createStorage();
 
 const search = ref('');
@@ -63,7 +65,7 @@ const bookToDelete = ref<string|null>(null);
 
 const genres = computed(() => {
   const set = new Set<string>();
-  books.value.forEach(b => {
+  allBooks.value.forEach(b => {
     if (Array.isArray(b.genres)) {
       b.genres.forEach(g => set.add(g));
     }
@@ -71,38 +73,54 @@ const genres = computed(() => {
   return Array.from(set);
 });
 
+// Fusionne livres utilisateur + exemples (sans doublons)
+const allBooks = computed(() => {
+  // Priorité au livre utilisateur si même id
+  const userIds = new Set(books.value.map(b => b.id));
+  const merged = [
+    ...books.value,
+    ...sampleBooks.value.filter(b => !userIds.has(b.id)),
+  ];
+  return merged;
+});
+
 const filteredBooks = computed(() => {
-  let list = books.value;
-  
+  let list = allBooks.value;
   if (search.value) {
     list = list.filter(b => 
       b.title.toLowerCase().includes(search.value.toLowerCase())
     );
   }
-  
   if (genreFilter.value) {
     list = list.filter(b => b.genres && b.genres.includes(genreFilter.value));
   }
-  
   if (sortBy.value === 'title') {
     list = [...list].sort((a, b) => a.title.localeCompare(b.title));
   } else if (sortBy.value === 'date') {
     list = [...list].sort((a, b) => parseInt(b.id) - parseInt(a.id));
   }
-  
   return list;
 });
 
 onMounted(async () => {
   books.value = await storage.getAllBooks();
-  // Collecter tous les genres uniques
-  const genres = new Set<string>();
-  books.value.forEach(book => {
-    if (Array.isArray(book.genres)) {
-      book.genres.forEach(g => genres.add(g));
+  // Charger les livres d'exemple depuis sample-books.json
+  try {
+    const resp = await fetch('/data/sample-books.json');
+    const data = await resp.json();
+    if (Array.isArray(data.books)) {
+      sampleBooks.value = data.books.map(b => {
+        let migrated = { ...b };
+        if (!Array.isArray(migrated.genres) && typeof migrated.genre === 'string') {
+          migrated.genres = [migrated.genre];
+          delete migrated.genre;
+        }
+        return { ...migrated, isSample: true };
+      });
     }
-  });
-  // genreFilter.value = Array.from(genres)[0] || '';
+  } catch (e) {
+    sampleBooks.value = [];
+  }
 });
 
 const createNewBook = () => {
@@ -118,7 +136,6 @@ const createNewBook = () => {
       inventory: []
     }
   };
-  
   storage.saveBook(newBook).then(() => {
     router.push(`/books/${newBook.id}`);
   });
@@ -271,5 +288,15 @@ async function deleteBook() {
   padding: 0.2rem 0.6rem;
   border-radius: 12px;
   font-size: 0.8rem;
+}
+.sample-badge {
+  display: inline-block;
+  background: var(--accent-warning);
+  color: var(--text-primary);
+  border-radius: 8px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 0.5rem;
 }
 </style> 

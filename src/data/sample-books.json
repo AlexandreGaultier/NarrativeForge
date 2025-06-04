@@ -2,19 +2,72 @@
   "books": [
     {
       "id": "book-1",
-      "title": "Le Mystère de la Tour Noire",
+      "title": "Les Ruines de l'Éclat",
       "genre": "Fantasy",
       "chapters": [
         {
-          "id": "chapter-1",
-          "number": 1,
-          "title": "Le Début de l'Aventure",
-          "text": "Vous vous réveillez dans une auberge inconnue...",
-          "next": ["chapter-2"]
+          "id": "1",
+          "title": "Arrivée aux ruines",
+          "text": "Lira s'arrête devant l'arche effondrée qui marque l'entrée des ruines. L'air est lourd, et l’obscurité semble l’inviter.\n\nDeux options s’offrent à elle.",
+          "next": ["2", "3"]
+        },
+        {
+          "id": "2",
+          "title": "Entrée discrète",
+          "text": "Lira rampe par une brèche dans le mur. Une dalle craque sous ses pieds...\n\n**Test de Dextérité (d20 ≥ 10)**\nSi réussi, elle évite le piège. Sinon, elle perd 3 PV.",
+          "next": ["4"]
+        },
+        {
+          "id": "3",
+          "title": "Entrée frontale",
+          "text": "Lira pousse la lourde porte. Un grondement résonne.\n\nUn **gobelin affamé** surgit !\n\n**Combat: Gobelin | HP: 10 | DGT: 3**",
+          "next": ["4"]
+        },
+        {
+          "id": "4",
+          "title": "Salle des statues",
+          "text": "Des statues de guerriers encadrent la pièce. Lira sent une énergie magique. Un piédestal brille au centre.",
+          "next": ["5", "6"]
+        },
+        {
+          "id": "5",
+          "title": "Toucher le piédestal",
+          "text": "Lira pose la main. Une lumière l’enveloppe.\n\n**Test de Sagesse (d20 ≥ 12)**\nSi réussi : elle gagne +2 PV. Sinon, elle est repoussée violemment (-2 PV).",
+          "next": ["7"]
+        },
+        {
+          "id": "6",
+          "title": "Ignorer le piédestal",
+          "text": "Elle préfère ne pas tenter le destin. Une porte dissimulée s'ouvre d'elle-même.",
+          "next": ["7"]
+        },
+        {
+          "id": "7",
+          "title": "Crypte obscure",
+          "text": "Des pas s’approchent. Lira tend l’oreille. Une silhouette massive s’avance :\n\n**Combat: Gardien squelette | HP: 18 | DGT: 4**",
+          "next": ["8"]
+        },
+        {
+          "id": "8",
+          "title": "Trésor scellé",
+          "text": "Au fond de la crypte, un coffre verrouillé.\n\n**Test d’Intelligence (d20 ≥ 15)**\nRéussi : +1 potion de soin (utilisable une fois pour regagner 5 PV).\nÉchec : le piège s’active (-5 PV).",
+          "next": ["9"]
+        },
+        {
+          "id": "9",
+          "title": "Sortie cachée",
+          "text": "Un passage s’ouvre dans le mur. La lumière du jour perce. Lira peut enfin sortir… Ou continuer vers le sanctuaire central.",
+          "next": ["10"]
+        },
+        {
+          "id": "10",
+          "title": "L'Éclat",
+          "text": "Lira entre dans la salle centrale. Un artefact étrange flotte dans les airs. Sa main tremble alors qu’elle tend le bras.\n\n**Fin ouverte...**\nSouhaitez-vous :\n- Revenir plus tard avec des renforts ?\n- Prendre l’objet et activer son pouvoir ?",
+          "next": []
         }
       ],
       "character": {
-        "name": "Aventurier",
+        "name": "Lira",
         "hp": 100,
         "gold": 50,
         "inventory": []
